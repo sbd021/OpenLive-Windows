@@ -32,6 +32,7 @@ First, create a developer account at [Agora.io](https://dashboard.agora.io/signi
 Next, download the **Agora Video SDK** from [Agora.io SDK](https://www.agora.io/en/blog/download/). Unzip the downloaded SDK package and copy the **sdk** to the "OpenLive" folder in project（the old one may be over written）.
 
 Finally, Open OpenLive.sln with your VC++ 2013(or higher) and build all solution and run.
+* there are tow different versions of the sdk package, x86 and x64, when build the x86 version, switch your solution platform to Win32 mode; when build the x64 version, switch it to x64 mode.
 
 ## Developer Environment Requirements
 * VC++ 2013(or higher)
