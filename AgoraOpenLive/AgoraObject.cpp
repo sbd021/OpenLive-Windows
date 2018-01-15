@@ -930,3 +930,29 @@ BOOL CAgoraObject::EnableWhiteboardFeq(BOOL bEnable)
 
 	return lStatus == ERROR_SUCCESS ? TRUE : FALSE;
 }
+
+CString CAgoraObject::LoadAppID()
+{
+	TCHAR szFilePath[MAX_PATH];
+	CString strAppID(APP_ID);
+
+	::GetModuleFileName(NULL, szFilePath, MAX_PATH);
+	LPTSTR lpLastSlash = _tcsrchr(szFilePath, _T('\\'));
+
+	if (lpLastSlash == NULL)
+		return strAppID;
+
+	SIZE_T nNameLen = MAX_PATH - (lpLastSlash - szFilePath + 1);
+	_tcscpy_s(lpLastSlash + 1, nNameLen, _T("AppID.ini"));
+
+	if (::GetFileAttributes(szFilePath) == INVALID_FILE_ATTRIBUTES)
+		return strAppID;
+	
+	CString strResolution;
+
+	::GetPrivateProfileString(_T("AppID"), _T("AppID"), NULL, strAppID.GetBuffer(MAX_PATH), MAX_PATH, szFilePath);
+
+	strAppID.ReleaseBuffer();
+
+	return strAppID;
+}

@@ -135,11 +135,13 @@ BOOL CAgoraOpenLiveDlg::OnInitDialog()
 	m_ftLink.CreateFont(16, 0, 0, 0, FW_BOLD, FALSE, TRUE, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, _T("Arial"));
 	m_ftVer.CreateFont(16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, _T("Arial"));
 
-	m_lpAgoraObject = CAgoraObject::GetAgoraObject(APP_ID);
+	CString strAppID = CAgoraObject::LoadAppID();
+
+	m_lpAgoraObject = CAgoraObject::GetAgoraObject(strAppID);
 	m_lpRtcEngine = CAgoraObject::GetEngine();
    
 
-	if (_tcslen(APP_ID) == 0) {
+	if (strAppID.GetLength() == 0) {
         MessageBox(_T("请在源码VENDOR_KEY宏定义中填上自己的KEY"), _T("提示"), MB_ICONINFORMATION);
         PostQuitMessage(0);
     }
