@@ -7,221 +7,13 @@
 
 #ifndef AGORA_RTC_ENGINE_H
 #define AGORA_RTC_ENGINE_H
-
-#include <stddef.h>
-#include <stdio.h>
-#include <stdarg.h>
-
-#if defined(_WIN32)
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#define AGORA_CALL __cdecl
-#if defined(AGORARTC_EXPORT)
-#define AGORA_API extern "C" __declspec(dllexport)
-#else
-#define AGORA_API extern "C" __declspec(dllimport)
-#endif
-#elif defined(__APPLE__)
-#define AGORA_API __attribute__((visibility("default"))) extern "C"
-#define AGORA_CALL
-#elif defined(__ANDROID__) || defined(__linux__)
-#define AGORA_API extern "C" __attribute__((visibility("default")))
-#define AGORA_CALL
-#else
-#define AGORA_API extern "C"
-#define AGORA_CALL
-#endif
+#include "AgoraBase.h"
+#include "IAgoraService.h"
 
 namespace agora {
-    namespace util {
-
-template<class T>
-class AutoPtr {
-    typedef T value_type;
-    typedef T* pointer_type;
-public:
-    AutoPtr(pointer_type p=0)
-        :ptr_(p)
-    {}
-    ~AutoPtr() {
-        if (ptr_)
-            ptr_->release();
-    }
-    operator bool() const { return ptr_ != (pointer_type)0; }
-    value_type& operator*() const {
-        return *get();
-    }
-
-    pointer_type operator->() const {
-        return get();
-    }
-
-    pointer_type get() const {
-        return ptr_;
-    }
-
-    pointer_type release() {
-        pointer_type tmp = ptr_;
-        ptr_ = 0;
-        return tmp;
-    }
-
-    void reset(pointer_type ptr = 0) {
-        if (ptr != ptr_ && ptr_)
-            ptr_->release();
-        ptr_ = ptr;
-    }
-    template<class C1, class C2>
-    bool queryInterface(C1* c, C2 iid) {
-        pointer_type p = NULL;
-        if (c && !c->queryInterface(iid, (void**)&p))
-        {
-            reset(p);
-        }
-        return p != NULL;;
-	}
-private:
-    AutoPtr(const AutoPtr&);
-    AutoPtr& operator=(const AutoPtr&);
-private:
-    pointer_type ptr_;
-};
-class IString {
-public:
-    virtual bool empty() const = 0;
-    virtual const char* c_str() = 0;
-    virtual const char* data() = 0;
-    virtual size_t length() = 0;
-    virtual void release() = 0;
-};
-typedef AutoPtr<IString> AString;
-
-    }//namespace util
 namespace rtc {
     typedef unsigned int uid_t;
     typedef void* view_t;
-
-enum INTERFACE_ID_TYPE
-{
-    AGORA_IID_AUDIO_DEVICE_MANAGER = 1,
-    AGORA_IID_VIDEO_DEVICE_MANAGER = 2,
-    AGORA_IID_RTC_ENGINE_PARAMETER = 3,
-    AGORA_IID_MEDIA_ENGINE = 4,
-};
-
-enum WARN_CODE_TYPE
-{
-    WARN_INVALID_VIEW = 8,
-    WARN_INIT_VIDEO = 16,
-    WARN_PENDING = 20,
-	WARN_NO_AVAILABLE_CHANNEL = 103,
-    WARN_LOOKUP_CHANNEL_TIMEOUT = 104,
-    WARN_LOOKUP_CHANNEL_REJECTED = 105,
-    WARN_OPEN_CHANNEL_TIMEOUT = 106,
-    WARN_OPEN_CHANNEL_REJECTED = 107,
-
-    // sdk: 100~1000
-    WARN_SWITCH_LIVE_VIDEO_TIMEOUT = 111,
-    WARN_SET_CLIENT_ROLE_TIMEOUT = 118,
-    WARN_OPEN_CHANNEL_INVALID_TICKET = 121,
-    WARN_OPEN_CHANNEL_TRY_NEXT_VOS = 122,
-    WARN_AUDIO_MIXING_OPEN_ERROR = 701,
-
-    WARN_ADM_RUNTIME_PLAYOUT_WARNING = 1014,
-    WARN_ADM_RUNTIME_RECORDING_WARNING = 1016,
-    WARN_ADM_RECORD_AUDIO_SILENCE = 1019,
-    WARN_ADM_WIN_CORE_NO_RECORDING_DEVICE = 1322,
-    WARN_ADM_WIN_CORE_NO_PLAYOUT_DEVICE = 1323,
-    WARN_ADM_WIN_CORE_IMPROPER_CAPTURE_RELEASE = 1324,
-    WARN_ADM_RECORD_AUDIO_LOWLEVEL = 1031,
-    WARN_ADM_WINDOWS_NO_DATA_READY_EVENT = 1040,
-    WARN_APM_HOWLING = 1051,
-};
-
-enum ERROR_CODE_TYPE
-{
-    ERR_OK = 0,
-    //1~1000
-    ERR_FAILED = 1,
-    ERR_INVALID_ARGUMENT = 2,
-    ERR_NOT_READY = 3,
-    ERR_NOT_SUPPORTED = 4,
-    ERR_REFUSED = 5,
-    ERR_BUFFER_TOO_SMALL = 6,
-    ERR_NOT_INITIALIZED = 7,
-    ERR_NO_PERMISSION = 9,
-    ERR_TIMEDOUT = 10,
-    ERR_CANCELED = 11,
-    ERR_TOO_OFTEN = 12,
-    ERR_BIND_SOCKET = 13,
-    ERR_NET_DOWN = 14,
-    ERR_NET_NOBUFS = 15,
-    ERR_JOIN_CHANNEL_REJECTED = 17,
-    ERR_LEAVE_CHANNEL_REJECTED = 18,
-	ERR_ALREADY_IN_USE = 19,
-	ERR_ABORTED = 20,
-    ERR_INIT_NET_ENGINE = 21,
-    ERR_RESOURCE_LIMITED = 22,
-    ERR_INVALID_APP_ID = 101,
-    ERR_INVALID_CHANNEL_NAME = 102,
-    ERR_TOKEN_EXPIRED = 109,
-    ERR_INVALID_TOKEN = 110,
-	ERR_CONNECTION_INTERRUPTED = 111, // only used in web sdk
-	ERR_CONNECTION_LOST = 112, // only used in web sdk
-    ERR_DECRYPTION_FAILED = 120,
-
-    ERR_NOT_IN_CHANNEL = 113,
-    ERR_SIZE_TOO_LARGE = 114,
-	ERR_BITRATE_LIMIT = 115,
-	ERR_TOO_MANY_DATA_STREAMS = 116,
-	ERR_STREAM_MESSAGE_TIMEOUT = 117,
-    ERR_SET_CLIENT_ROLE_NOT_AUTHORIZED = 119,
-    ERR_CLIENT_IS_BANNED_BY_SERVER = 123,
-
-    //1001~2000
-    ERR_LOAD_MEDIA_ENGINE = 1001,
-    ERR_START_CALL = 1002,
-    ERR_START_CAMERA = 1003,
-    ERR_START_VIDEO_RENDER = 1004,
-    ERR_ADM_GENERAL_ERROR = 1005,
-    ERR_ADM_JAVA_RESOURCE = 1006,
-    ERR_ADM_SAMPLE_RATE = 1007,
-    ERR_ADM_INIT_PLAYOUT = 1008,
-    ERR_ADM_START_PLAYOUT = 1009,
-    ERR_ADM_STOP_PLAYOUT = 1010,
-    ERR_ADM_INIT_RECORDING = 1011,
-    ERR_ADM_START_RECORDING = 1012,
-    ERR_ADM_STOP_RECORDING = 1013,
-    ERR_ADM_RUNTIME_PLAYOUT_ERROR = 1015,
-    ERR_ADM_RUNTIME_RECORDING_ERROR = 1017,
-    ERR_ADM_RECORD_AUDIO_FAILED = 1018,
-    ERR_ADM_INIT_LOOPBACK = 1022,
-    ERR_ADM_START_LOOPBACK = 1023,
-    ERR_ADM_NO_PERMISSION = 1027,
-    // 1025, as warning for interruption of adm on ios
-    // 1026, as warning for route change of adm on ios
-    ERR_ADM_ANDROID_JNI_JAVA_RECORD_ERROR = 1115,
-
-    // VDM error code starts from 1500
-    ERR_VDM_CAMERA_NOT_AUTHORIZED  = 1501,
-
-    // VCM error code starts from 1600
-    ERR_VCM_UNKNOWN_ERROR = 1600,
-    ERR_VCM_ENCODER_INIT_ERROR = 1601,
-    ERR_VCM_ENCODER_ENCODE_ERROR = 1602,
-    ERR_VCM_ENCODER_SET_ERROR = 1603,
-};
-
-enum LOG_FILTER_TYPE
-{
-	LOG_FILTER_OFF = 0,
-    LOG_FILTER_DEBUG = 0x080f,
-    LOG_FILTER_INFO = 0x000f,
-    LOG_FILTER_WARN = 0x000e,
-    LOG_FILTER_ERROR = 0x000c,
-    LOG_FILTER_CRITICAL = 0x0008,
-	LOG_FILTER_MASK = 0x80f,
-};
 
 enum MAX_DEVICE_ID_LENGTH_TYPE
 {
@@ -308,78 +100,78 @@ enum VIDEO_MIRROR_MODE_TYPE
 };
 
 enum VIDEO_PROFILE_TYPE
-{                                   // res       fps  kbps
-    VIDEO_PROFILE_LANDSCAPE_120P = 0,         // 160x120   15   65
-    VIDEO_PROFILE_LANDSCAPE_120P_3 = 2,       // 120x120   15   50
-    VIDEO_PROFILE_LANDSCAPE_180P = 10,        // 320x180   15   140
-    VIDEO_PROFILE_LANDSCAPE_180P_3 = 12,      // 180x180   15   100
-    VIDEO_PROFILE_LANDSCAPE_180P_4 = 13,      // 240x180   15   120
-    VIDEO_PROFILE_LANDSCAPE_240P = 20,        // 320x240   15   200
-    VIDEO_PROFILE_LANDSCAPE_240P_3 = 22,      // 240x240   15   140
-    VIDEO_PROFILE_LANDSCAPE_240P_4 = 23,      // 424x240   15   220
-    VIDEO_PROFILE_LANDSCAPE_360P = 30,        // 640x360   15   400
-    VIDEO_PROFILE_LANDSCAPE_360P_3 = 32,      // 360x360   15   260
-    VIDEO_PROFILE_LANDSCAPE_360P_4 = 33,      // 640x360   30   600
-    VIDEO_PROFILE_LANDSCAPE_360P_6 = 35,      // 360x360   30   400
-    VIDEO_PROFILE_LANDSCAPE_360P_7 = 36,      // 480x360   15   320
-    VIDEO_PROFILE_LANDSCAPE_360P_8 = 37,      // 480x360   30   490
-    VIDEO_PROFILE_LANDSCAPE_360P_9 = 38,      // 640x360   15   800
-    VIDEO_PROFILE_LANDSCAPE_360P_10 = 39,     // 640x360   24   800
-    VIDEO_PROFILE_LANDSCAPE_360P_11 = 100,    // 640x360   24   1000
-    VIDEO_PROFILE_LANDSCAPE_480P = 40,        // 640x480   15   500
-    VIDEO_PROFILE_LANDSCAPE_480P_3 = 42,      // 480x480   15   400
-    VIDEO_PROFILE_LANDSCAPE_480P_4 = 43,      // 640x480   30   750
-    VIDEO_PROFILE_LANDSCAPE_480P_6 = 45,      // 480x480   30   600
-    VIDEO_PROFILE_LANDSCAPE_480P_8 = 47,		// 848x480   15   610
-    VIDEO_PROFILE_LANDSCAPE_480P_9 = 48,		// 848x480   30   930
-    VIDEO_PROFILE_LANDSCAPE_480P_10 = 49,		// 640x480   10   400
-    VIDEO_PROFILE_LANDSCAPE_720P = 50,        // 1280x720  15   1130
-    VIDEO_PROFILE_LANDSCAPE_720P_3 = 52,      // 1280x720  30   1710
-    VIDEO_PROFILE_LANDSCAPE_720P_5 = 54,      // 960x720   15   910
-    VIDEO_PROFILE_LANDSCAPE_720P_6 = 55,      // 960x720   30   1380
-    VIDEO_PROFILE_LANDSCAPE_1080P = 60,       // 1920x1080 15   2080
-    VIDEO_PROFILE_LANDSCAPE_1080P_3 = 62,     // 1920x1080 30   3150
-    VIDEO_PROFILE_LANDSCAPE_1080P_5 = 64,     // 1920x1080 60   4780
-    VIDEO_PROFILE_LANDSCAPE_1440P = 66,       // 2560x1440 30   4850
-    VIDEO_PROFILE_LANDSCAPE_1440P_2 = 67,     // 2560x1440 60   7350
-    VIDEO_PROFILE_LANDSCAPE_4K = 70,          // 3840x2160 30   8910
-    VIDEO_PROFILE_LANDSCAPE_4K_3 = 72,        // 3840x2160 60   13500
+{                                             // res       fps
+    VIDEO_PROFILE_LANDSCAPE_120P = 0,         // 160x120   15
+    VIDEO_PROFILE_LANDSCAPE_120P_3 = 2,       // 120x120   15
+    VIDEO_PROFILE_LANDSCAPE_180P = 10,        // 320x180   15
+    VIDEO_PROFILE_LANDSCAPE_180P_3 = 12,      // 180x180   15
+    VIDEO_PROFILE_LANDSCAPE_180P_4 = 13,      // 240x180   15
+    VIDEO_PROFILE_LANDSCAPE_240P = 20,        // 320x240   15
+    VIDEO_PROFILE_LANDSCAPE_240P_3 = 22,      // 240x240   15
+    VIDEO_PROFILE_LANDSCAPE_240P_4 = 23,      // 424x240   15
+    VIDEO_PROFILE_LANDSCAPE_360P = 30,        // 640x360   15
+    VIDEO_PROFILE_LANDSCAPE_360P_3 = 32,      // 360x360   15
+    VIDEO_PROFILE_LANDSCAPE_360P_4 = 33,      // 640x360   30
+    VIDEO_PROFILE_LANDSCAPE_360P_6 = 35,      // 360x360   30
+    VIDEO_PROFILE_LANDSCAPE_360P_7 = 36,      // 480x360   15
+    VIDEO_PROFILE_LANDSCAPE_360P_8 = 37,      // 480x360   30
+    VIDEO_PROFILE_LANDSCAPE_360P_9 = 38,      // 640x360   15
+    VIDEO_PROFILE_LANDSCAPE_360P_10 = 39,     // 640x360   24
+    VIDEO_PROFILE_LANDSCAPE_360P_11 = 100,    // 640x360   24
+    VIDEO_PROFILE_LANDSCAPE_480P = 40,        // 640x480   15
+    VIDEO_PROFILE_LANDSCAPE_480P_3 = 42,      // 480x480   15
+    VIDEO_PROFILE_LANDSCAPE_480P_4 = 43,      // 640x480   30
+    VIDEO_PROFILE_LANDSCAPE_480P_6 = 45,      // 480x480   30
+    VIDEO_PROFILE_LANDSCAPE_480P_8 = 47,      // 848x480   15
+    VIDEO_PROFILE_LANDSCAPE_480P_9 = 48,      // 848x480   30
+    VIDEO_PROFILE_LANDSCAPE_480P_10 = 49,     // 640x480   10
+    VIDEO_PROFILE_LANDSCAPE_720P = 50,        // 1280x720  15
+    VIDEO_PROFILE_LANDSCAPE_720P_3 = 52,      // 1280x720  30
+    VIDEO_PROFILE_LANDSCAPE_720P_5 = 54,      // 960x720   15
+    VIDEO_PROFILE_LANDSCAPE_720P_6 = 55,      // 960x720   30
+    VIDEO_PROFILE_LANDSCAPE_1080P = 60,       // 1920x1080 15
+    VIDEO_PROFILE_LANDSCAPE_1080P_3 = 62,     // 1920x1080 30
+    VIDEO_PROFILE_LANDSCAPE_1080P_5 = 64,     // 1920x1080 60
+    VIDEO_PROFILE_LANDSCAPE_1440P = 66,       // 2560x1440 30
+    VIDEO_PROFILE_LANDSCAPE_1440P_2 = 67,     // 2560x1440 60
+    VIDEO_PROFILE_LANDSCAPE_4K = 70,          // 3840x2160 30
+    VIDEO_PROFILE_LANDSCAPE_4K_3 = 72,        // 3840x2160 60
 
-    VIDEO_PROFILE_PORTRAIT_120P = 1000,         // 120x160   15   65
-    VIDEO_PROFILE_PORTRAIT_120P_3 = 1002,       // 120x120   15   50
-    VIDEO_PROFILE_PORTRAIT_180P = 1010,        // 180x320   15   140
-    VIDEO_PROFILE_PORTRAIT_180P_3 = 1012,      // 180x180   15   100
-    VIDEO_PROFILE_PORTRAIT_180P_4 = 1013,      // 180x240   15   120
-    VIDEO_PROFILE_PORTRAIT_240P = 1020,        // 240x320   15   200
-    VIDEO_PROFILE_PORTRAIT_240P_3 = 1022,      // 240x240   15   140
-    VIDEO_PROFILE_PORTRAIT_240P_4 = 1023,      // 240x424   15   220
-    VIDEO_PROFILE_PORTRAIT_360P = 1030,        // 360x640   15   400
-    VIDEO_PROFILE_PORTRAIT_360P_3 = 1032,      // 360x360   15   260
-    VIDEO_PROFILE_PORTRAIT_360P_4 = 1033,      // 360x640   30   600
-    VIDEO_PROFILE_PORTRAIT_360P_6 = 1035,      // 360x360   30   400
-    VIDEO_PROFILE_PORTRAIT_360P_7 = 1036,      // 360x480   15   320
-    VIDEO_PROFILE_PORTRAIT_360P_8 = 1037,      // 360x480   30   490
-    VIDEO_PROFILE_PORTRAIT_360P_9 = 1038,      // 360x640   15   800
-    VIDEO_PROFILE_PORTRAIT_360P_10 = 1039,     // 360x640   24   800
-    VIDEO_PROFILE_PORTRAIT_360P_11 = 1100,    // 360x640   24   1000
-    VIDEO_PROFILE_PORTRAIT_480P = 1040,        // 480x640   15   500
-    VIDEO_PROFILE_PORTRAIT_480P_3 = 1042,      // 480x480   15   400
-    VIDEO_PROFILE_PORTRAIT_480P_4 = 1043,      // 480x640   30   750
-    VIDEO_PROFILE_PORTRAIT_480P_6 = 1045,      // 480x480   30   600
-    VIDEO_PROFILE_PORTRAIT_480P_8 = 1047,		 // 480x848   15   610
-    VIDEO_PROFILE_PORTRAIT_480P_9 = 1048,		 // 480x848   30   930
-    VIDEO_PROFILE_PORTRAIT_480P_10 = 1049,     // 480x640   10   400
-    VIDEO_PROFILE_PORTRAIT_720P = 1050,        // 720x1280  15   1130
-    VIDEO_PROFILE_PORTRAIT_720P_3 = 1052,      // 720x1280  30   1710
-    VIDEO_PROFILE_PORTRAIT_720P_5 = 1054,      // 720x960   15   910
-    VIDEO_PROFILE_PORTRAIT_720P_6 = 1055,      // 720x960   30   1380
-    VIDEO_PROFILE_PORTRAIT_1080P = 1060,       // 1080x1920 15   2080
-    VIDEO_PROFILE_PORTRAIT_1080P_3 = 1062,     // 1080x1920 30   3150
-    VIDEO_PROFILE_PORTRAIT_1080P_5 = 1064,     // 1080x1920 60   4780
-    VIDEO_PROFILE_PORTRAIT_1440P = 1066,       // 1440x2560 30   4850
-    VIDEO_PROFILE_PORTRAIT_1440P_2 = 1067,     // 1440x2560 60   7350
-    VIDEO_PROFILE_PORTRAIT_4K = 1070,          // 2160x3840 30   8910
-    VIDEO_PROFILE_PORTRAIT_4K_3 = 1072,        // 2160x3840 60   13500
+    VIDEO_PROFILE_PORTRAIT_120P = 1000,       // 120x160   15
+    VIDEO_PROFILE_PORTRAIT_120P_3 = 1002,     // 120x120   15
+    VIDEO_PROFILE_PORTRAIT_180P = 1010,       // 180x320   15
+    VIDEO_PROFILE_PORTRAIT_180P_3 = 1012,     // 180x180   15
+    VIDEO_PROFILE_PORTRAIT_180P_4 = 1013,     // 180x240   15
+    VIDEO_PROFILE_PORTRAIT_240P = 1020,       // 240x320   15
+    VIDEO_PROFILE_PORTRAIT_240P_3 = 1022,     // 240x240   15
+    VIDEO_PROFILE_PORTRAIT_240P_4 = 1023,     // 240x424   15
+    VIDEO_PROFILE_PORTRAIT_360P = 1030,       // 360x640   15
+    VIDEO_PROFILE_PORTRAIT_360P_3 = 1032,     // 360x360   15
+    VIDEO_PROFILE_PORTRAIT_360P_4 = 1033,     // 360x640   30
+    VIDEO_PROFILE_PORTRAIT_360P_6 = 1035,     // 360x360   30
+    VIDEO_PROFILE_PORTRAIT_360P_7 = 1036,     // 360x480   15
+    VIDEO_PROFILE_PORTRAIT_360P_8 = 1037,     // 360x480   30
+    VIDEO_PROFILE_PORTRAIT_360P_9 = 1038,     // 360x640   15
+    VIDEO_PROFILE_PORTRAIT_360P_10 = 1039,    // 360x640   24
+    VIDEO_PROFILE_PORTRAIT_360P_11 = 1100,    // 360x640   24
+    VIDEO_PROFILE_PORTRAIT_480P = 1040,       // 480x640   15
+    VIDEO_PROFILE_PORTRAIT_480P_3 = 1042,     // 480x480   15
+    VIDEO_PROFILE_PORTRAIT_480P_4 = 1043,     // 480x640   30
+    VIDEO_PROFILE_PORTRAIT_480P_6 = 1045,     // 480x480   30
+    VIDEO_PROFILE_PORTRAIT_480P_8 = 1047,     // 480x848   15
+    VIDEO_PROFILE_PORTRAIT_480P_9 = 1048,     // 480x848   30
+    VIDEO_PROFILE_PORTRAIT_480P_10 = 1049,    // 480x640   10
+    VIDEO_PROFILE_PORTRAIT_720P = 1050,       // 720x1280  15
+    VIDEO_PROFILE_PORTRAIT_720P_3 = 1052,     // 720x1280  30
+    VIDEO_PROFILE_PORTRAIT_720P_5 = 1054,     // 720x960   15
+    VIDEO_PROFILE_PORTRAIT_720P_6 = 1055,     // 720x960   30
+    VIDEO_PROFILE_PORTRAIT_1080P = 1060,      // 1080x1920 15
+    VIDEO_PROFILE_PORTRAIT_1080P_3 = 1062,    // 1080x1920 30
+    VIDEO_PROFILE_PORTRAIT_1080P_5 = 1064,    // 1080x1920 60
+    VIDEO_PROFILE_PORTRAIT_1440P = 1066,      // 1440x2560 30
+    VIDEO_PROFILE_PORTRAIT_1440P_2 = 1067,    // 1440x2560 60
+    VIDEO_PROFILE_PORTRAIT_4K = 1070,         // 2160x3840 30
+    VIDEO_PROFILE_PORTRAIT_4K_3 = 1072,       // 2160x3840 60
     VIDEO_PROFILE_DEFAULT = VIDEO_PROFILE_LANDSCAPE_360P,
 };
 
@@ -430,12 +222,14 @@ enum INJECT_STREAM_STATUS
     INJECT_STREAM_STATUS_START_SUCCESS = 0,
     INJECT_STREAM_STATUS_START_ALREADY_EXISTS = 1,
     INJECT_STREAM_STATUS_START_UNAUTHORIZED = 2,
-    INJECT_STREAM_STATUS_START_FAILED = 3,
-    INJECT_STREAM_STATUS_STOP_SUCCESS = 4,
-    INJECT_STREAM_STATUS_STOP_NOT_FOUND = 5,
-    INJECT_STREAM_STATUS_STOP_UNAUTHORIZED = 6,
-    INJECT_STREAM_STATUS_STOP_FAILED = 7,
-    INJECT_STREAM_STATUS_BROKEN = 8,
+    INJECT_STREAM_STATUS_START_TIMEDOUT = 3,
+    INJECT_STREAM_STATUS_START_FAILED = 4,
+    INJECT_STREAM_STATUS_STOP_SUCCESS = 5,
+    INJECT_STREAM_STATUS_STOP_NOT_FOUND = 6,
+    INJECT_STREAM_STATUS_STOP_UNAUTHORIZED = 7,
+    INJECT_STREAM_STATUS_STOP_TIMEDOUT = 8,
+    INJECT_STREAM_STATUS_STOP_FAILED = 9,
+    INJECT_STREAM_STATUS_BROKEN = 10,
 };
 
 enum REMOTE_VIDEO_STREAM_TYPE
@@ -523,7 +317,7 @@ struct LocalVideoStats
 struct RemoteVideoStats
 {
     uid_t uid;
-    int delay;
+    int delay;  // obsolete
 	int width;
 	int height;
 	int receivedBitrate;
@@ -659,9 +453,10 @@ struct InjectStreamConfig {
     int audioBitrate;
     int audioChannels;
 
+    // width / height default set to 0 means pull the stream with its original resolution
     InjectStreamConfig()
-        : width(300)
-        , height(640)
+        : width(0)
+        , height(0)
         , videoGop(30)
         , videoFramerate(15)
         , videoBitrate(400)
@@ -670,8 +465,6 @@ struct InjectStreamConfig {
         , audioChannels(1)
     {}
 };
-
-#if defined(_WIN32)
 
 enum RTMP_STREAM_LIFE_CYCLE_TYPE
 {
@@ -712,7 +505,7 @@ struct PublisherConfiguration {
 	{}
 
 };
-#endif
+
 #if !defined(__ANDROID__)
 struct VideoCanvas
 {
@@ -1096,7 +889,7 @@ public:
 		(void)enabled;
 	}
 	
-    /**
+	/**
     * when remote user enable local video function, the function will be called
     * @param [in] uid
     *        the UID of the remote user
@@ -1115,9 +908,10 @@ public:
     * @param [in] error
     *        error code while 0 means OK
     */
-    virtual void onApiCallExecuted(const char* api, int error) {
+    virtual void onApiCallExecuted(int err, const char* api, const char* result) {
+        (void)err;
         (void)api;
-        (void)error;
+        (void)result;
     }
 
     /**
@@ -1164,12 +958,12 @@ public:
     * when local user disconnected by accident, the function will be called(then SDK will try to reconnect itself)
     */
     virtual void onConnectionInterrupted() {}
-
+    
     /**
      * when local user is banned by the server, the function will be called
      */
     virtual void onConnectionBanned() {}
-
+    
     virtual void onRefreshRecordingServiceStatus(int status) {
         (void)status;
     }
@@ -1195,7 +989,7 @@ public:
     }
 
 	/**
-	*
+	* 
 	*/
 	virtual void onStreamMessageError(uid_t uid, int streamId, int code, int missed, int cached) {
         (void)uid;
@@ -1492,7 +1286,7 @@ public:
     * @return return 0 if success or an error code
     */
     virtual int getRecordingDeviceVolume(int *volume) = 0;
-  
+
     virtual int setPlaybackDeviceMute(bool mute) = 0;
     virtual int getPlaybackDeviceMute(bool *mute) = 0;
     virtual int setRecordingDeviceMute(bool mute) = 0;
@@ -1553,7 +1347,7 @@ public:
     *        false: notify engine to release its resources and returns without waiting for resources are really destroyed
     */
     virtual void release(bool sync=false) = 0;
-
+	
 	/**
     * initialize the engine
     * @param [in] context
@@ -1697,6 +1491,39 @@ public:
 
     virtual int setAudioProfile(AUDIO_PROFILE_TYPE profile, AUDIO_SCENARIO_TYPE scenario) = 0;
 
+#if defined(__APPLE__) || defined(_WIN32)
+
+#if defined(__APPLE__)
+  typedef unsigned int WindowIDType;
+#elif defined(_WIN32)
+  typedef HWND WindowIDType;
+#endif
+  /**
+   * start screen/windows capture
+   *
+   *  @param windowId screen capture, if windowId is 0; windows capture if windowsId isn't 0;
+   *  @param rect     valid when windowId is 0; whole screen if rect is NULL.
+   *
+   *  @return return 0 if success or an error code
+   */
+  virtual int startScreenCapture(WindowIDType windowId, int captureFreq, const Rect *rect, int bitrate) = 0;
+  
+  /**
+   * stop screen capture
+   * @return return 0 if success or an error code
+   */
+  virtual int stopScreenCapture() = 0;
+  
+  /**
+   * update screen capture region
+   *
+   *  @param rect     valid when windowId is 0; whole screen if rect is NULL.
+   *
+   *  @return return 0 if success or an error code
+   */
+  virtual int updateScreenCaptureRegion(const Rect *rect) = 0;
+#endif
+
     /**
     * get self call id in the current channel
     * @param [in, out] callId
@@ -1738,13 +1565,10 @@ public:
 
     virtual int setVideoCompositingLayout(const VideoCompositingLayout& sei) = 0;
     virtual int clearVideoCompositingLayout() = 0;
-
-#if defined(_WIN32)
 	virtual int configPublisher(const PublisherConfiguration& config) = 0;
-#endif
 
-    virtual int publish(const char *url, bool transcodingEnabled) = 0;
-    virtual int unpublish(const char *url) = 0;
+    virtual int addPublishStreamUrl(const char *url, bool transcodingEnabled) = 0;
+    virtual int removePublishStreamUrl(const char *url) = 0;
     virtual int setLiveTranscoding(const LiveTranscoding &transcoding) = 0;
 
     virtual int addInjectStreamUrl(const char* url, const InjectStreamConfig& config) = 0;
@@ -2013,7 +1837,7 @@ public:
     int muteLocalVideoStream(bool mute) {
         return setParameters("{\"rtc.video.mute_me\":%s,\"che.video.local.send\":%s}", mute ? "true" : "false", mute ? "false" : "true");
     }
-
+	
 	int enableLocalVideo(bool enabled) {
 		return setParameters("{\"rtc.video.capture\":%s,\"che.video.local.capture\":%s,\"che.video.local.render\":%s,\"che.video.local.send\":%s}", enabled ? "true" : "false", enabled ? "true" : "false", enabled ? "true" : "false", enabled ? "true" : "false");
 	}
@@ -2256,81 +2080,6 @@ public:
         else
             return setParameters("{\"che.audio.external_capture\":false,\"che.audio.external_capture.push\":false}");
     }
-#if defined(__APPLE__)
-    /**
-     * start screen/windows capture
-     *
-     *  @param windowId screen capture, if windowId is 0; windows capture if windowsId isn't 0;
-     *  @param rect     valid when windowId is 0; whole screen if rect is NULL.
-     *
-     *  @return return 0 if success or an error code
-     */
-    int startScreenCapture(unsigned int windowId, int captureFreq, const Rect *rect, int bitRate = 0) {
-        if (!rect)
-            return setObject("che.video.start_screen_capture", "{\"id\":%u,\"captureFreq\":%d,\"bitRate\":%d}", windowId, captureFreq, bitRate);
-        else
-            return setObject("che.video.start_screen_capture", "{\"id\":%u,\"captureFreq\":%d,\"top\":%d,\"left\":%d,\"bottom\":%d,\"right\":%d,\"bitRate\":%d}", windowId, captureFreq, rect->top, rect->left, rect->bottom, rect->right, bitRate);
-    }
-
-    /**
-     * stop screen capture
-     * @return return 0 if success or an error code
-     */
-    int stopScreenCapture() {
-        return m_parameter ? m_parameter->setBool("che.video.stop_screen_capture", true) : -ERR_NOT_INITIALIZED;
-    }
-
-    /**
-    * update screen capture region
-    *
-    *  @param rect     valid when windowId is 0; whole screen if rect is NULL.
-    *
-    *  @return return 0 if success or an error code
-    */
-    int updateScreenCaptureRegion(const Rect *rect) {
-      if (!rect)
-        return setObject("che.video.update_screen_capture_region", "{}");
-      else
-        return setObject("che.video.update_screen_capture_region", "{\"top\":%d,\"left\":%d,\"bottom\":%d,\"right\":%d}", rect->top, rect->left, rect->bottom, rect->right);
-    }
-#elif defined(_WIN32)
-    /**
-     * start screen/windows capture
-     *
-     *  @param windowId screen capture, if windowId is 0; windows capture if windowsId isn't 0;
-     *  @param rect     valid when windowId is 0; whole screen if rect is NULL.
-     *
-     *  @return return 0 if success or an error code
-     */
-    int startScreenCapture(HWND windowId, int captureFreq, const Rect *rect, int bitRate = 0) {
-        if (!rect)
-            return setObject("che.video.start_screen_capture", "{\"id\":%u,\"captureFreq\":%d,\"bitRate\":%d}", (unsigned int)windowId, captureFreq, bitRate);
-        else
-            return setObject("che.video.start_screen_capture", "{\"id\":%u,\"captureFreq\":%d,\"top\":%d,\"left\":%d,\"bottom\":%d,\"right\":%d,\"bitRate\":%d}", (unsigned int)windowId, captureFreq, rect->top, rect->left, rect->bottom, rect->right, bitRate);
-    }
-
-    /**
-     * stop screen capture
-     * @return return 0 if success or an error code
-     */
-    int stopScreenCapture() {
-        return m_parameter ? m_parameter->setBool("che.video.stop_screen_capture", true) : -ERR_NOT_INITIALIZED;
-    }
-
-    /**
-    * update screen capture region
-    *
-    *  @param rect     valid when windowId is 0; whole screen if rect is NULL.
-    *
-    *  @return return 0 if success or an error code
-    */
-    int updateScreenCaptureRegion(const Rect *rect) {
-      if (!rect)
-        return setObject("che.video.update_screen_capture_region", "{}");
-      else
-        return setObject("che.video.update_screen_capture_region", "{\"top\":%d,\"left\":%d,\"bottom\":%d,\"right\":%d}", rect->top, rect->left, rect->bottom, rect->right);
-    }
-#endif
 
     /**
     * set path to save the log file
@@ -2379,7 +2128,7 @@ public:
     int setRemoteRenderMode(uid_t uid, RENDER_MODE_TYPE renderMode) {
         return setObject("che.video.render_mode", "{\"uid\":%u,\"mode\":%d}", uid, renderMode);
     }
-
+    
     int setLocalVideoMirrorMode(VIDEO_MIRROR_MODE_TYPE mirrorMode) {
         if (!m_parameter) return -ERR_NOT_INITIALIZED;
         const char *value;
@@ -2401,11 +2150,11 @@ public:
 	int startRecordingService(const char* recordingKey) {
         return m_parameter ? m_parameter->setString("rtc.api.start_recording_service", recordingKey) : -ERR_NOT_INITIALIZED;
     }
-
+    
     int stopRecordingService(const char* recordingKey) {
         return m_parameter ? m_parameter->setString("rtc.api.stop_recording_service", recordingKey) : -ERR_NOT_INITIALIZED;
     }
-
+    
     int refreshRecordingServiceStatus() {
         return m_parameter ? m_parameter->setBool("rtc.api.query_recording_service_status", true) : -ERR_NOT_INITIALIZED;
     }
@@ -2423,7 +2172,7 @@ public:
     int setMixedAudioFrameParameters(int sampleRate, int samplesPerCall) {
         return setObject("che.audio.set_mixed_raw_audio_format", "{\"sampleRate\":%d,\"samplesPerCall\":%d}", sampleRate, samplesPerCall);
     }
-
+  
     int adjustRecordingSignalVolume(int volume) {//[0, 400]: e.g. 50~0.5x 100~1x 400~4x
         if (volume < 0)
             volume = 0;
@@ -2463,7 +2212,7 @@ public:
     }
 
 	int enableLoopbackRecording(bool enabled) {
-		return m_parameter->setUInt("{\"rtc.req.remove_publisher\":%d}", (int)enabled);
+		return setParameters("{\"che.audio.loopback.recording\":%s}", enabled ? "true" : "false");
 	}
 
 protected:
@@ -2505,13 +2254,14 @@ private:
 } //namespace rtc
 } // namespace agora
 
+
 /**
 * to get the version number of the SDK
 * @param [in, out] build
 *        the build number of Agora SDK
 * @return returns the string of the version of the SDK
 */
-AGORA_API const char* AGORA_CALL getAgoraRtcEngineVersion(int* build);
+#define getAgoraRtcEngineVersion getAgoraSdkVersion
 
 /**
 * create the RTC engine object and return the pointer
@@ -2525,8 +2275,7 @@ AGORA_API agora::rtc::IRtcEngine* AGORA_CALL createAgoraRtcEngine();
 *        the error code
 * @return returns the description of the error code
 */
-AGORA_API const char* AGORA_CALL getAgoraRtcEngineErrorDescription(int err);
-
-AGORA_API int AGORA_CALL setAgoraRtcEngineExternalSymbolLoader(void* (*func)(const char* symname));
+#define getAgoraRtcEngineErrorDescription getAgoraSdkErrorDescription
+#define setAgoraRtcEngineExternalSymbolLoader setAgoraSdkExternalSymbolLoader
 
 #endif
