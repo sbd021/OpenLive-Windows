@@ -61,6 +61,7 @@ BEGIN_MESSAGE_MAP(CVideoDlg, CDialogEx)
 
 	ON_MESSAGE(WM_MSGID(EID_START_RCDSRV), &CVideoDlg::OnStartRecordingService)
 	ON_MESSAGE(WM_MSGID(EID_STOP_RCDSRV), &CVideoDlg::OnStopRecordingService)
+	ON_MESSAGE(WM_WINDOWSHARE, &CVideoDlg::OnWindowShareStart)
 	
     ON_BN_CLICKED(IDC_BTNMIN_VIDEO, &CVideoDlg::OnBnClickedBtnmin)
 	ON_BN_CLICKED(IDC_BTNCLOSE_VIDEO, &CVideoDlg::OnBnClickedBtnclose)
@@ -587,6 +588,20 @@ void CVideoDlg::OnBnClickedBtntip()
 		m_btnTip.SwitchButtonStatus(CAGButton::AGBTN_PUSH);
 	else
 		m_btnTip.SwitchButtonStatus(CAGButton::AGBTN_NORMAL);
+}
+
+LRESULT CVideoDlg::OnWindowShareStart(WPARAM wParam, LPARAM lParam)
+{
+	HWND hShareWnd = (HWND)wParam;
+	if (hShareWnd == GetSafeHwnd()) {
+		CAgoraObject::GetAgoraObject()->EnableLocalRender(FALSE);
+		m_wndLocal.Invalidate(TRUE);
+	}
+
+	CAgoraObject::GetAgoraObject()->EnableScreenCapture((HWND)wParam, 15, NULL, TRUE);
+	m_btnScrCap.SwitchButtonStatus(CAGButton::AGBTN_PUSH);
+
+	return 0;
 }
 
 void CVideoDlg::OnBnClickedBtnScreenCapture()
